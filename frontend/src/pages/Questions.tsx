@@ -8,7 +8,6 @@ import { BASE_URL } from "@/lib/api"; // adjust path if needed
 
 import { 
   Search, 
-  Filter, 
   Lightbulb, 
   Eye, 
   Code,
@@ -19,7 +18,6 @@ import type { Question } from '../types';
 
 const Questions: React.FC = () => {
   const { toast } = useToast();
-  const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [userCode, setUserCode] = useState('');

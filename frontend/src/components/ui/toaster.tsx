@@ -1,4 +1,3 @@
-import * as React from "react"
 import { Toast, ToastProvider, ToastViewport } from "./toast"
 import { useToast } from "../../hooks/useToast"
 
