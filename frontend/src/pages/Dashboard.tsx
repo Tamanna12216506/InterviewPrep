@@ -1,23 +1,28 @@
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { 
-  BookOpen, 
-  CheckCircle, 
-  Clock, 
+import { useNavigate } from 'react-router-dom';
+
+import {
+  BookOpen,
+  CheckCircle,
+  Clock,
   TrendingUp,
   Brain,
   Target,
   Zap
 } from 'lucide-react';
+
 import type { PerformanceStats, Question } from '../types';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<PerformanceStats | null>(null);
   const [randomQuestion, setRandomQuestion] = useState<Question | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +37,7 @@ const Dashboard: React.FC = () => {
         axios.get('/api/performance/stats'),
         axios.get('/api/questions/random')
       ]);
-      
+
       setStats(statsResponse.data);
       setRandomQuestion(questionResponse.data);
     } catch (error) {
@@ -101,7 +106,7 @@ const Dashboard: React.FC = () => {
             <TrendingUp className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats?.totalTime || 0}h</div>
+            <div className="text-2xl font-bold text-blue-600">{stats?.totalTime || 0} min</div>
             <p className="text-xs text-muted-foreground">Practice time</p>
           </CardContent>
         </Card>
@@ -145,7 +150,7 @@ const Dashboard: React.FC = () => {
                 <p className="text-gray-600 text-sm line-clamp-3">
                   {randomQuestion.description.substring(0, 150)}...
                 </p>
-                <Button className="w-full">
+                <Button className="w-full" onClick={() => navigate('/questions')}>
                   Start Challenge
                 </Button>
               </div>
@@ -165,15 +170,27 @@ const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-start">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => navigate('/questions')}
+              >
                 <BookOpen className="mr-2 h-4 w-4" />
                 Browse Questions
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => navigate('/interview')}
+              >
                 <Target className="mr-2 h-4 w-4" />
                 Start Mock Interview
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => navigate('/performance')}
+              >
                 <TrendingUp className="mr-2 h-4 w-4" />
                 View Progress
               </Button>

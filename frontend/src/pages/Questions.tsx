@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { BASE_URL } from "@/lib/api"; // adjust path if needed
+import Editor from "@monaco-editor/react";
 
 import { 
   Search, 
@@ -27,6 +28,12 @@ const Questions: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTopic, setSelectedTopic] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState('');
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [editorLanguage, setEditorLanguage] = useState("cpp");
+  const [editorTheme, setEditorTheme] = useState("light"); 
+  const [output, setOutput] = useState('');
+  const [isRunning, setIsRunning] = useState(false);
+  const [startTime, setStartTime] = useState<Date | null>(null);
 
   const topics = ['Arrays', 'Strings', 'Linked Lists', 'Trees', 'Graphs', 'Dynamic Programming', 'Sorting', 'Searching'];
   const difficulties = ['Easy', 'Medium', 'Hard'];
@@ -48,13 +55,16 @@ const Questions: React.FC = () => {
       setHint('');
       setSolution('');
       setShowSolution(false);
+      setIsCompleted(false);
+      setStartTime(new Date());
+      setLoading(false);
     } catch (error) {
+      console.error('Fetch random question error:', error);
       toast({
         title: "Error",
         description: "Failed to fetch question",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };
@@ -71,27 +81,51 @@ const Questions: React.FC = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post('/api/questions/generate', {
+      const token = localStorage.getItem('token');
+      console.log('Generating question with:', { topic: selectedTopic, difficulty: selectedDifficulty || 'Medium' });
+      
+      const response = await axios.post(`${BASE_URL}/api/questions/generate`, {
         topic: selectedTopic,
         difficulty: selectedDifficulty || 'Medium'
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
+      
+      console.log('Generated question response:', response.data);
       setSelectedQuestion(response.data);
       setUserCode('');
       setHint('');
       setSolution('');
       setShowSolution(false);
+      setIsCompleted(false);
+      setStartTime(new Date());
+      setLoading(false);
+      
       toast({
         title: "Success",
-        description: "New question generated!",
+        description: "New question generated successfully!",
       });
-    } catch (error) {
+    } catch (error: any) {
+      setLoading(false);
+      console.error('Generate question error:', error);
+      
+      let errorMessage = "Failed to generate question";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to generate question",
+        description: errorMessage,
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -99,11 +133,18 @@ const Questions: React.FC = () => {
     if (!selectedQuestion) return;
 
     try {
-      const response = await axios.post(`/api/questions/${selectedQuestion._id}/hint`, {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${BASE_URL}/api/questions/${selectedQuestion._id}/hint`, {
         currentCode: userCode
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
       setHint(response.data.hint);
     } catch (error) {
+      console.error('Get hint error:', error);
       toast({
         title: "Error",
         description: "Failed to get hint",
@@ -116,10 +157,16 @@ const Questions: React.FC = () => {
     if (!selectedQuestion) return;
 
     try {
-      const response = await axios.get(`/api/questions/${selectedQuestion._id}/solution`);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BASE_URL}/api/questions/${selectedQuestion._id}/solution`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       setSolution(response.data.solution);
       setShowSolution(true);
     } catch (error) {
+      console.error('Get solution error:', error);
       toast({
         title: "Error",
         description: "Failed to get solution",
@@ -128,21 +175,67 @@ const Questions: React.FC = () => {
     }
   };
 
+  const handleRunCode = async () => {
+    setIsRunning(true);
+    setOutput('');
+    try {
+      const res = await fetch(`${BASE_URL}/api/code/run`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          language: editorLanguage,
+          code: userCode,
+        }),
+      });
+
+      const data = await res.json();
+      setOutput(data.output || 'No output');
+    } catch (err) {
+      console.error('Error running code:', err);
+      setOutput('Error running code');
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedQuestion) {
+      setStartTime(new Date());
+    }
+  }, [selectedQuestion]);
+
+  const calculateTimeSpent = (): number => {
+    if (!startTime) return 0;
+    const endTime = new Date();
+    const diffInMinutes = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+    return Math.max(1, diffInMinutes); // Minimum 1 minute
+  };
+
   const updateProgress = async (status: 'solved' | 'attempted') => {
     if (!selectedQuestion) return;
 
     try {
-      await axios.post('/api/performance/update', {
+      const token = localStorage.getItem('token');
+      await axios.post(`${BASE_URL}/api/performance/update`, {
         questionId: selectedQuestion._id,
         status,
         code: userCode,
-        timeSpent: 30 // Mock time spent
+        timeSpent: calculateTimeSpent()
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
+      setIsCompleted(true);
       toast({
         title: "Progress Updated",
         description: `Question marked as ${status}`,
       });
     } catch (error) {
+      console.error('Update progress error:', error);
       toast({
         title: "Error",
         description: "Failed to update progress",
@@ -180,7 +273,7 @@ const Questions: React.FC = () => {
           </Button>
           <Button onClick={generateNewQuestion} disabled={loading}>
             <Sparkles className="mr-2 h-4 w-4" />
-            Generate AI Question
+            {loading ? 'Generating...' : 'Generate AI Question'}
           </Button>
         </div>
       </div>
@@ -301,20 +394,78 @@ const Questions: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <textarea
+              <div className="flex gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+                  <select
+                    value={editorLanguage}
+                    onChange={(e) => setEditorLanguage(e.target.value)}
+                    className="border px-2 py-1 rounded-md"
+                  >
+                    <option value="cpp">C++</option>
+                    <option value="python">Python</option>
+                    <option value="java">Java</option>
+                    <option value="javascript">JavaScript</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Theme</label>
+                  <select
+                    value={editorTheme}
+                    onChange={(e) => setEditorTheme(e.target.value)}
+                    className="border px-2 py-1 rounded-md"
+                  >
+                    <option value="light">Light</option>
+                    <option value="vs-dark">Dark</option>
+                  </select>
+                </div>
+              </div>
+
+              <Editor
+                height="400px"
+                language={editorLanguage}
+                theme={editorTheme}
                 value={userCode}
-                onChange={(e) => setUserCode(e.target.value)}
-                placeholder="// Write your solution here..."
-                className="w-full h-96 p-4 font-mono text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(value) => setUserCode(value || '')}
+                options={{
+                  fontSize: 14,
+                  minimap: { enabled: false },
+                }}
               />
+
               <div className="mt-4 flex gap-2">
-                <Button onClick={() => updateProgress('solved')}>
-                  Mark as Solved
-                </Button>
+                <button
+                  onClick={handleRunCode}
+                  disabled={isRunning}
+                  className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded disabled:opacity-50"
+                >
+                  {isRunning ? 'Running...' : 'Run Code'}
+                </button>
+
+                {userCode && !isCompleted && (
+                  <Button onClick={() => updateProgress('solved')} className="ml-2">
+                    Mark as Done
+                  </Button>
+                )}
+                
                 <Button onClick={() => updateProgress('attempted')} variant="outline">
                   Save Progress
                 </Button>
               </div>
+
+              {isCompleted && (
+                <div className="text-green-600 font-medium mt-2">
+                  ✓ Marked as Complete
+                </div>
+              )}
+
+              {output && (
+                <div className="mt-4 bg-gray-100 p-4 rounded text-sm">
+                  <h2 className="font-semibold text-gray-800 mb-2">Output:</h2>
+                  <pre className="whitespace-pre-wrap">{output}</pre>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

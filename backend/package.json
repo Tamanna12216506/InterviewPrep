@@ -8,8 +8,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "postinstall": "npm run build",
-  "seed:questions": "ts-node src/scripts/seedQuestions.ts"
-
+    "seed:questions": "ts-node src/scripts/seedQuestions.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.2.1",
@@ -23,7 +22,8 @@
     "joi": "^17.11.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.3",
-    "socket.io": "^4.7.4"
+    "socket.io": "^4.7.4",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
