@@ -7,12 +7,12 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import authRoutes from './routes/auth';
-import questionRoutes from './routes/questions';
-import performanceRoutes from './routes/performance';
-import { authenticateToken } from './middleware/auth';
-import geminiRoute from './routes/geminiRoute';
-import codeRoutes from './routes/codeRoutes';
+import authRoutes from '../routes/auth';
+import questionRoutes from '../routes/questions';
+import performanceRoutes from '../routes/performance';
+import { authenticateToken } from '../middleware/auth';
+import geminiRoute from '../routes/geminiRoute';
+import codeRoutes from '../routes/codeRoutes';
 
 dotenv.config();
 
