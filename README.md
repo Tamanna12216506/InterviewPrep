@@ -1,5 +1,3 @@
-﻿# InterviewPrep
----
 
 # Interview Prep
 
