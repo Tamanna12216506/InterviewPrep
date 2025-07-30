@@ -13,6 +13,7 @@ import performanceRoutes from '../routes/performance';
 import { authenticateToken } from '../middleware/auth';
 import geminiRoute from '../routes/geminiRoute';
 import codeRoutes from '../routes/codeRoutes';
+import serverless from 'serverless-http';
 
 dotenv.config();
 
@@ -314,10 +315,11 @@ setInterval(() => {
   
 }, 5 * 60 * 1000); // Every 5 minutes
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+// const PORT = process.env.PORT || 5000;
+// server.listen(PORT, () => {
+//   console.log(`🚀 Server running on port ${PORT}`);
 
-});
+// });
 
-export default app;
+// export default app;
+export default serverless(app);
